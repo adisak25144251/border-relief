@@ -17,10 +17,10 @@ jobs:
         uses: actions/checkout@v4
       
       # ตั้งค่า Node.js (ตรวจสอบว่าตรงกับ Prerequisite ของคุณ)
-      - name: 🛠️ Setup Node.js 18.x
+      - name: 🛠️ Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: 'apps/web/package-lock.json' # เพื่อให้ cache ถูกต้อง
 
