@@ -25,6 +25,20 @@ jobs:
           # ... (cache configs)
           cache: 'npm'
           cache-dependency-path: 'apps/web/package-lock.json' # เพื่อให้ cache ถูกต้อง
+          # ... (หลังจาก Setup Node.js)
+
+      - name: 📦 Install Dependencies
+        # ใช้ npm install ใน root ก่อน (ตามที่ Next.js แนะนำสำหรับ Monorepo)
+        run: npm install 
+
+      # ** เพิ่ม Step นี้ ** เพื่อติดตั้ง Dependencies เฉพาะของ web ใหม่
+      - name: 🔄 Reinstall web dependencies (Fix lightningcss)
+        run: npm install --prefix apps/web
+        working-directory: ./apps/web
+        
+      - name: 🏗️ Build Next.js Static Export
+        run: npm run build
+        working-directory: ./apps/web
 
       # ➡️ ขั้นตอนการ Build
       - name: 📦 Install Dependencies
