@@ -20,7 +20,9 @@ jobs:
       - name: 🛠️ Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # เปลี่ยนเวอร์ชัน Node.js ให้เป็น 20 หรือเวอร์ชันที่สูงกว่า
+          node-version: '20' 
+          # ... (cache configs)
           cache: 'npm'
           cache-dependency-path: 'apps/web/package-lock.json' # เพื่อให้ cache ถูกต้อง
 
