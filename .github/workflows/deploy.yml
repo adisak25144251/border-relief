@@ -33,7 +33,9 @@ jobs:
 
       # ** เพิ่ม Step นี้ ** เพื่อติดตั้ง Dependencies เฉพาะของ web ใหม่
       - name: 🔄 Reinstall web dependencies (Fix lightningcss)
-        run: npm install --prefix apps/web
+        # เมื่อมีการกำหนด working-directory: ./apps/web แล้ว
+        # เราไม่จำเป็นต้องใส่ --prefix apps/web ซ้ำอีก
+        run: npm install 
         working-directory: ./apps/web
         
       - name: 🏗️ Build Next.js Static Export
