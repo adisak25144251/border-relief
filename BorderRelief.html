@@ -1,0 +1,683 @@
+<!-- Chosen Palette: Humanitarian Neutral (Slate/White background) with Trust Blue (Primary), Alert Red (Critical), and Safe Orange (Offline/Warning) -->
+<!-- Application Structure Plan: The application is designed as a 'System Walkthrough' dashboard. It is divided into four thematic sections: 1. Command Center (Global Stats), 2. Field Operations (Intake Simulation), 3. Security & Logistics (Safe Map Demo), and 4. System Architecture (Offline Sync logic). This structure allows stakeholders to understand the 'What', 'How', and 'Why' of the system in a logical flow, moving from high-level metrics to specific operational workflows. -->
+<!-- Visualization & Content Choices: 
+    1. Dashboard Charts (Chart.js): Bar and Doughnut charts are used to visualize Inventory Levels and Item Categories to provide immediate situational awareness (Goal: Inform/Compare).
+    2. Interactive Map (Chart.js Scatter): chosen to demonstrate the 'Safe Location Mode'. It toggles between precise coordinates (Scatter points) and obfuscated zones (Bubble/Grid) to visually prove the privacy feature (Goal: Relationships/Security).
+    3. Intake Simulator (HTML/JS): A functional form simulating the AI camera flow to demonstrate the 'Speed' KPI (Goal: Process/Action).
+    4. Sync Architecture (CSS/JS Stepper): Visualizes the invisible 'Offline-First' logic using a state-driven stepper (Goal: Explain/Education).
+-->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BorderRelief: System Preview & Interactive Report</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FontAwesome (for Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+        }
+        
+        /* Chart Container Utilities */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Pulse Animation for Live Status */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); }
+            80%, 100% { opacity: 0; }
+        }
+        .pulse-dot {
+            position: relative;
+        }
+        .pulse-dot::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0;
+            height: 100%; width: 100%;
+            background-color: inherit;
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.6;
+            animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        /* Mobile Responsive Adjustments */
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white w-10 h-10 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
+                    <i class="fa-solid fa-box-open text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-slate-900">BorderRelief</h1>
+                    <p class="text-xs text-slate-500 font-medium">Humanitarian Logistics Platform</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- Connectivity Status Simulation -->
+                <div id="connection-status" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 transition-all cursor-pointer" onclick="app.toggleConnection()">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot" id="conn-dot"></div>
+                    <span class="text-xs font-bold" id="conn-text">Online</span>
+                    <i class="fa-solid fa-wifi text-xs ml-1"></i>
+                </div>
+                
+                <button class="text-slate-400 hover:text-blue-600 transition-colors">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- LEFT COLUMN: Operations & Dashboard (lg:col-span-8) -->
+        <div class="lg:col-span-8 space-y-8">
+
+            <!-- Section 1: Executive Summary / Stats -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">ภาพรวมสถานการณ์ (Situation Report)</h2>
+                        <p class="text-sm text-slate-500 mt-1">ข้อมูลล่าสุดจากการซิงค์ภาคสนาม (Real-time Sync)</p>
+                    </div>
+                    <button class="text-blue-600 text-sm font-bold hover:underline" onclick="app.refreshData()">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                    </button>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <!-- KPI 1 -->
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center shadow-sm">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <span class="text-xs font-bold text-blue-800 uppercase tracking-wider">ผู้ได้รับความช่วยเหลือ</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-800" id="stat-beneficiaries">2,450</div>
+                        <div class="text-xs text-blue-600 mt-1"><i class="fa-solid fa-arrow-up"></i> +12% จากสัปดาห์ก่อน</div>
+                    </div>
+
+                    <!-- KPI 2 -->
+                    <div class="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-white text-amber-600 flex items-center justify-center shadow-sm">
+                                <i class="fa-solid fa-box"></i>
+                            </div>
+                            <span class="text-xs font-bold text-amber-800 uppercase tracking-wider">รอจัดส่ง (Pending)</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-800" id="stat-pending">85</div>
+                        <div class="text-xs text-amber-600 mt-1">ค้างส่งเกิน 24 ชม: 0 รายการ</div>
+                    </div>
+
+                    <!-- KPI 3 -->
+                    <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-white text-emerald-600 flex items-center justify-center shadow-sm">
+                                <i class="fa-solid fa-truck-fast"></i>
+                            </div>
+                            <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider">อัตราความสำเร็จ</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-800" id="stat-success">98.5%</div>
+                        <div class="text-xs text-emerald-600 mt-1">Lead Time เฉลี่ย: 1.5 ชม.</div>
+                    </div>
+                </div>
+
+                <!-- Charts Area -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Chart 1: Inventory Composition -->
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center">
+                            <i class="fa-solid fa-chart-pie mr-2 text-slate-400"></i> สัดส่วนคลังสินค้า (Inventory Mix)
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="inventoryChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Chart 2: Intake Trend -->
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center">
+                            <i class="fa-solid fa-chart-line mr-2 text-slate-400"></i> แนวโน้มการรับบริจาค (Intake Trend)
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Safe Map Visualization -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">แผนที่ความปลอดภัย (Safe Location Map)</h2>
+                        <p class="text-sm text-slate-500 mt-1">ระบบ Geo-Obfuscation เพื่อปกป้องตำแหน่งคลังและผู้ลี้ภัย</p>
+                    </div>
+                    
+                    <!-- Security Toggle -->
+                    <div class="flex items-center bg-slate-100 rounded-lg p-1">
+                        <button onclick="app.setMapMode('safe')" id="btn-map-safe" class="px-4 py-2 rounded-md text-xs font-bold transition-all bg-white text-blue-600 shadow-sm">
+                            <i class="fa-solid fa-shield mr-1"></i> Public View (Grid)
+                        </button>
+                        <button onclick="app.setMapMode('admin')" id="btn-map-admin" class="px-4 py-2 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all">
+                            <i class="fa-solid fa-lock mr-1"></i> Admin View (Pin)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative w-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                    <div class="chart-container" style="height: 400px; max-width: 100%;">
+                        <canvas id="mapChart"></canvas>
+                    </div>
+                    
+                    <!-- Map Legend Overlay -->
+                    <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-sm text-xs">
+                        <div class="font-bold mb-2 text-slate-700">คำอธิบาย (Legend)</div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 opacity-50"></div>
+                            <span>Warehouse Zone (Grid)</span>
+                        </div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-3 h-3 rounded-full border-2 border-red-500"></div>
+                            <span>Critical Request</span>
+                        </div>
+                        <div id="legend-admin" class="hidden mt-2 pt-2 border-t border-slate-200">
+                            <div class="flex items-center gap-2 text-slate-900 font-bold">
+                                <i class="fa-solid fa-location-dot text-red-600"></i>
+                                <span>Precise Location (Admin Only)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Workflow & Simulator (lg:col-span-4) -->
+        <div class="lg:col-span-4 space-y-8">
+
+            <!-- Section 3: AI Intake Simulator -->
+            <section class="bg-gradient-to-b from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 text-white p-6 relative overflow-hidden">
+                <!-- Background decoration -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                
+                <h2 class="text-lg font-bold mb-1 relative z-10"><i class="fa-solid fa-camera mr-2"></i>ระบบรับของ (Intake AI)</h2>
+                <p class="text-blue-100 text-xs mb-6 relative z-10">จำลองการทำงานหน้างาน: สแกน > AI วิเคราะห์ > ยืนยัน</p>
+
+                <!-- Interactive Simulator -->
+                <div class="bg-white rounded-xl p-4 text-slate-800 shadow-lg relative z-10">
+                    
+                    <!-- State: Idle -->
+                    <div id="intake-idle" class="text-center py-6">
+                        <button onclick="app.simulateScan()" class="w-20 h-20 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 transition-all active:scale-95 border-2 border-dashed border-blue-200">
+                            <i class="fa-solid fa-expand text-2xl"></i>
+                        </button>
+                        <p class="text-sm font-bold">แตะเพื่อจำลองการสแกน</p>
+                        <p class="text-xs text-slate-400 mt-1">รองรับ Barcode / QR / AI Photo</p>
+                    </div>
+
+                    <!-- State: Processing -->
+                    <div id="intake-processing" class="hidden py-8 text-center">
+                        <div class="animate-spin w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-3"></div>
+                        <p class="text-sm font-bold text-blue-600">AI กำลังวิเคราะห์ภาพ...</p>
+                        <p class="text-xs text-slate-400">Classifying Item Category...</p>
+                    </div>
+
+                    <!-- State: Result -->
+                    <div id="intake-result" class="hidden">
+                        <div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-lg text-xs font-bold mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Confidence: 98%
+                        </div>
+                        
+                        <div class="space-y-3 mb-4">
+                            <div>
+                                <label class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Item Type</label>
+                                <div class="font-bold text-lg" id="result-name">ข้าวสาร (Rice) 5kg</div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div>
+                                    <label class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Category</label>
+                                    <div class="text-sm bg-slate-100 px-2 py-1 rounded">Dry Food</div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Expiry</label>
+                                    <div class="text-sm bg-red-50 text-red-600 px-2 py-1 rounded font-bold">2024-12-31</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="app.resetIntake()" class="flex-1 py-2 text-slate-500 text-xs font-bold hover:bg-slate-50 rounded-lg">ยกเลิก</button>
+                            <button onclick="app.confirmIntake()" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-md">ยืนยันรับของ</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Recent Scans Log -->
+                <div class="mt-4 relative z-10">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold text-blue-100 uppercase">รายการล่าสุด (Local Log)</h3>
+                        <span class="text-[10px] bg-blue-800/50 px-2 py-0.5 rounded text-white" id="queue-count">0 waiting</span>
+                    </div>
+                    <div class="space-y-2 max-h-32 overflow-y-auto pr-1" id="scan-log">
+                        <!-- Log items will be injected here -->
+                        <div class="bg-white/10 p-2 rounded flex justify-between items-center text-xs">
+                            <span>📦 บะหมี่กึ่งสำเร็จรูป (Box)</span>
+                            <span class="opacity-70">10:42 AM</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Offline Architecture Visualization -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                    <i class="fa-solid fa-network-wired mr-2 text-slate-400"></i> โครงสร้างการซิงค์
+                </h2>
+                
+                <div class="relative pl-4 border-l-2 border-slate-200 space-y-6">
+                    <!-- Step 1 -->
+                    <div class="relative">
+                        <div class="absolute -left-[21px] top-0 w-4 h-4 rounded-full bg-blue-600 ring-4 ring-white"></div>
+                        <h3 class="text-sm font-bold text-slate-800">1. Local Action (PWA)</h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                            เมื่อจนท. กดบันทึก ข้อมูลจะถูกเก็บลง <strong>IndexedDB</strong> ทันที (ไม่ต้องรอเน็ต).
+                        </p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="relative">
+                        <div class="absolute -left-[21px] top-0 w-4 h-4 rounded-full bg-slate-300 ring-4 ring-white transition-colors" id="step-2-dot"></div>
+                        <h3 class="text-sm font-bold text-slate-800">2. Sync Manager</h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Background Service ตรวจสอบสัญญาณเน็ต และส่งข้อมูลแบบ <strong>Sequential Queue</strong>.
+                        </p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="relative">
+                        <div class="absolute -left-[21px] top-0 w-4 h-4 rounded-full bg-slate-300 ring-4 ring-white transition-colors" id="step-3-dot"></div>
+                        <h3 class="text-sm font-bold text-slate-800">3. Ledger Validation</h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Server ตรวจสอบสต็อกด้วยระบบบัญชีคู่ (Double-entry) เพื่อป้องกันยอดติดลบ.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-center">
+                    <span id="sync-status-text" class="text-slate-500"><i class="fa-solid fa-check-circle mr-1"></i> System Idle</span>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Application Logic -->
+    <script>
+        const app = {
+            state: {
+                isOnline: true,
+                mapMode: 'safe', // 'safe' or 'admin'
+                intakeQueue: [],
+                totalItems: 1240,
+                pendingSync: 0
+            },
+            
+            charts: {},
+
+            init() {
+                this.initCharts();
+                this.renderLog();
+                // Simulate periodic updates
+                setInterval(() => {
+                    if(this.state.isOnline && this.state.pendingSync > 0) {
+                        this.processSync();
+                    }
+                }, 3000);
+            },
+
+            // --- Connectivity Simulation ---
+            toggleConnection() {
+                this.state.isOnline = !this.state.isOnline;
+                const btn = document.getElementById('connection-status');
+                const dot = document.getElementById('conn-dot');
+                const text = document.getElementById('conn-text');
+                
+                if (this.state.isOnline) {
+                    btn.classList.replace('bg-rose-50', 'bg-emerald-50');
+                    btn.classList.replace('text-rose-700', 'text-emerald-700');
+                    btn.classList.replace('border-rose-100', 'border-emerald-100');
+                    dot.classList.replace('bg-rose-500', 'bg-emerald-500');
+                    dot.classList.add('pulse-dot');
+                    text.innerText = 'Online';
+                    this.updateSyncStep(3, false); // Idle
+                } else {
+                    btn.classList.replace('bg-emerald-50', 'bg-rose-50');
+                    btn.classList.replace('text-emerald-700', 'text-rose-700');
+                    btn.classList.replace('border-emerald-100', 'border-rose-100');
+                    dot.classList.replace('bg-emerald-500', 'bg-rose-500');
+                    dot.classList.remove('pulse-dot');
+                    text.innerText = 'Offline';
+                    document.getElementById('sync-status-text').innerHTML = '<i class="fa-solid fa-pause mr-1"></i> Paused (Offline)';
+                }
+            },
+
+            // --- Intake Simulation ---
+            simulateScan() {
+                document.getElementById('intake-idle').classList.add('hidden');
+                document.getElementById('intake-processing').classList.remove('hidden');
+                
+                setTimeout(() => {
+                    document.getElementById('intake-processing').classList.add('hidden');
+                    document.getElementById('intake-result').classList.remove('hidden');
+                    
+                    // Randomize Item for demo
+                    const items = [
+                        { name: 'น้ำดื่ม (Water) Pack', cat: 'Water', date: '2025-06-01' },
+                        { name: 'ปลากระป๋อง (Canned Fish)', cat: 'Food', date: '2026-01-01' },
+                        { name: 'ยาสามัญ (Med Kit)', cat: 'Medicine', date: '2024-12-31' }
+                    ];
+                    const item = items[Math.floor(Math.random() * items.length)];
+                    document.getElementById('result-name').innerText = item.name;
+                    
+                }, 1500);
+            },
+
+            resetIntake() {
+                document.getElementById('intake-result').classList.add('hidden');
+                document.getElementById('intake-idle').classList.remove('hidden');
+            },
+
+            confirmIntake() {
+                const item = document.getElementById('result-name').innerText;
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // Add to local queue
+                this.state.intakeQueue.unshift({ item, time, synced: false });
+                this.state.pendingSync++;
+                this.state.totalItems++;
+                
+                // Update UI
+                this.renderLog();
+                this.resetIntake();
+                this.updateDashboard();
+                
+                // Trigger Sync Animation
+                if(this.state.isOnline) {
+                    this.processSync();
+                } else {
+                    this.updateSyncStep(1, true); // Stored Locally
+                }
+            },
+
+            renderLog() {
+                const container = document.getElementById('scan-log');
+                const countBadge = document.getElementById('queue-count');
+                
+                countBadge.innerText = `${this.state.pendingSync} waiting`;
+                
+                container.innerHTML = this.state.intakeQueue.map(log => `
+                    <div class="bg-white/10 p-2 rounded flex justify-between items-center text-xs animate-[fadeIn_0.3s]">
+                        <span>📦 ${log.item}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="opacity-70">${log.time}</span>
+                            ${log.synced ? '<i class="fa-solid fa-check text-emerald-300"></i>' : '<i class="fa-solid fa-clock text-amber-300"></i>'}
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // --- Sync Logic Visualization ---
+            updateSyncStep(step, isActive) {
+                const dot2 = document.getElementById('step-2-dot');
+                const dot3 = document.getElementById('step-3-dot');
+                const status = document.getElementById('sync-status-text');
+
+                // Reset
+                dot2.classList.replace('bg-blue-600', 'bg-slate-300');
+                dot3.classList.replace('bg-blue-600', 'bg-slate-300');
+
+                if (isActive) {
+                    if (step >= 2) dot2.classList.replace('bg-slate-300', 'bg-blue-600');
+                    if (step >= 3) dot3.classList.replace('bg-slate-300', 'bg-blue-600');
+                    
+                    if (step === 1) status.innerHTML = '<i class="fa-solid fa-database mr-1"></i> Saved to IndexedDB';
+                    if (step === 2) status.innerHTML = '<i class="fa-solid fa-rotate mr-1 fa-spin"></i> Syncing to Cloud...';
+                    if (step === 3) status.innerHTML = '<i class="fa-solid fa-check-double mr-1 text-emerald-600"></i> Ledger Updated';
+                }
+            },
+
+            processSync() {
+                if (this.state.pendingSync === 0) return;
+                
+                this.updateSyncStep(2, true);
+                
+                setTimeout(() => {
+                    this.state.pendingSync--;
+                    this.state.intakeQueue.forEach(i => i.synced = true);
+                    this.renderLog();
+                    this.updateSyncStep(3, true);
+                    
+                    setTimeout(() => {
+                         document.getElementById('sync-status-text').innerHTML = '<i class="fa-solid fa-check-circle mr-1"></i> System Idle';
+                         this.updateSyncStep(0, false);
+                    }, 1000);
+                }, 1500);
+            },
+
+            updateDashboard() {
+                document.getElementById('stat-pending').innerText = this.state.pendingSync;
+                // Update chart data
+                this.charts.inventory.data.datasets[0].data[0] += 1; // Increment Food for demo
+                this.charts.inventory.update();
+            },
+
+            refreshData() {
+                // Simulate data refresh
+                const icon = event.target.querySelector('i');
+                icon.classList.add('fa-spin');
+                setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+            },
+
+            // --- Map Logic ---
+            setMapMode(mode) {
+                this.state.mapMode = mode;
+                const safeBtn = document.getElementById('btn-map-safe');
+                const adminBtn = document.getElementById('btn-map-admin');
+                const legend = document.getElementById('legend-admin');
+
+                if (mode === 'safe') {
+                    safeBtn.classList.replace('bg-white', 'bg-slate-100'); // Inactive look (fix logic if needed)
+                    safeBtn.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+                    safeBtn.classList.remove('bg-slate-100', 'text-slate-500');
+                    
+                    adminBtn.classList.remove('bg-white', 'text-red-600', 'shadow-sm');
+                    adminBtn.classList.add('text-slate-500');
+                    
+                    legend.classList.add('hidden');
+                    
+                    // Show Grid Data
+                    this.charts.map.data.datasets[0].hidden = false; // Grid
+                    this.charts.map.data.datasets[1].hidden = true;  // Pins
+                } else {
+                    adminBtn.classList.add('bg-white', 'text-red-600', 'shadow-sm');
+                    adminBtn.classList.remove('text-slate-500');
+                    
+                    safeBtn.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+                    safeBtn.classList.add('text-slate-500');
+
+                    legend.classList.remove('hidden');
+
+                    // Show Pin Data
+                    this.charts.map.data.datasets[0].hidden = true; // Grid
+                    this.charts.map.data.datasets[1].hidden = false; // Pins
+                }
+                this.charts.map.update();
+            },
+
+            initCharts() {
+                // Chart 1: Inventory (Bar)
+                const ctxInv = document.getElementById('inventoryChart').getContext('2d');
+                this.charts.inventory = new Chart(ctxInv, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Food', 'Water', 'Medicine', 'Clothes', 'Baby'],
+                        datasets: [{
+                            label: 'Current Stock',
+                            data: [450, 300, 120, 80, 50],
+                            backgroundColor: ['#f97316', '#3b82f6', '#ef4444', '#a855f7', '#ec4899'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, grid: { display: false } } }
+                    }
+                });
+
+                // Chart 2: Trend (Line)
+                const ctxTrend = document.getElementById('trendChart').getContext('2d');
+                this.charts.trend = new Chart(ctxTrend, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Intake',
+                            data: [12, 19, 15, 25, 22, 30, 45],
+                            borderColor: '#3b82f6',
+                            tension: 0.4,
+                            fill: true,
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { grid: { display: false } }, y: { display: false } }
+                    }
+                });
+
+                // Chart 3: Map (Scatter - Simulating GIS)
+                const ctxMap = document.getElementById('mapChart').getContext('2d');
+                
+                // Data: Grid Zones (Safe Mode)
+                const gridData = [
+                    { x: 2, y: 3, r: 20 }, { x: 5, y: 5, r: 25 }, { x: 8, y: 2, r: 15 }, // Bubbles
+                    { x: 3, y: 7, r: 30 }
+                ];
+                
+                // Data: Precise Pins (Admin Mode)
+                const pinData = [
+                    { x: 2.1, y: 3.2 }, { x: 5.0, y: 5.1 }, { x: 8.2, y: 2.1 }, { x: 3.1, y: 7.2 },
+                    { x: 4.5, y: 4.5 } // Secret Safe House
+                ];
+
+                this.charts.map = new Chart(ctxMap, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [
+                            {
+                                type: 'bubble',
+                                label: 'Safe Zones (Grid)',
+                                data: gridData,
+                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                borderColor: 'rgba(59, 130, 246, 0.5)',
+                                borderWidth: 1,
+                                hidden: false // Default visible
+                            },
+                            {
+                                type: 'scatter',
+                                label: 'Precise Locations',
+                                data: pinData,
+                                backgroundColor: '#ef4444',
+                                pointStyle: 'triangle',
+                                pointRadius: 8,
+                                hidden: true // Default hidden
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        aspectRatio: 1,
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ctx.dataset.label === 'Precise Locations' ? 
+                                        `Lat: ${ctx.raw.y}, Lng: ${ctx.raw.x}` : 
+                                        `Zone Activity: High`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { display: false, min: 0, max: 10 },
+                            y: { display: false, min: 0, max: 10 }
+                        },
+                        layout: { padding: 20 }
+                    }
+                });
+            }
+        };
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
