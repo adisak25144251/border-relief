@@ -1,0 +1,22 @@
+{
+    "name": "border-relief",
+    "version": "0.1.0",
+    "description": "BorderRelief Donations Monorepo",
+    "private": true,
+    "workspaces": [
+        "apps/*"
+    ],
+    "scripts": {
+        "dev:api": "npm run start:dev --workspace=apps/api",
+        "dev:web": "npm run dev --workspace=apps/web",
+        "dev:ml": "npm run dev:ml:cmd",
+        "dev:ml:cmd": "cd apps/ml && uvicorn main:app --reload --port 5000",
+        "build:api": "npm run build --workspace=apps/api",
+        "build:web": "npm run build --workspace=apps/web",
+        "test:api": "npm run test --workspace=apps/api",
+        "lint": "npm run lint --workspaces"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.0"
+    }
+}

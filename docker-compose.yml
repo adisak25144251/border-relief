@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # Database
+  db:
+    image: postgres:15-alpine
+    container_name: br_postgres
+    environment:
+      POSTGRES_USER: borderrelief
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: border_relief
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_br:/var/lib/postgresql/data
+    networks:
+      - border_relief_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U borderrelief -d border_relief" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: br_redis
+    ports:
+      - "6380:6379"
+    networks:
+      - border_relief_net
+
+  # Mock S3 (MinIO)
+  minio:
+    image: minio/minio
+    container_name: br_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    networks:
+      - border_relief_net
+
+  # Core API
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: br_api
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: postgresql://borderrelief:password@db:5432/border_relief
+      REDIS_URL: redis://redis:6379
+      ML_SERVICE_URL: http://ml:5000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+      AWS_BUCKET: border-relief-files
+      AWS_ENDPOINT: http://minio:9000
+    networks:
+      - border_relief_net
+
+  # ML Service
+  ml:
+    build:
+      context: ./apps/ml
+      dockerfile: Dockerfile
+    container_name: br_ml
+    ports:
+      - "5001:5000"
+    networks:
+      - border_relief_net
+
+  # Frontend
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: br_web
+    ports:
+      - "3002:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    depends_on:
+      - api
+    networks:
+      - border_relief_net
+
+networks:
+  border_relief_net:
+    driver: bridge
+
+volumes:
+  postgres_data_br:
