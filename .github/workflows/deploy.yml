@@ -2,66 +2,53 @@ name: Deploy Next.js to GitHub Pages
 
 on:
   push:
-    branches:
-      - main # หรือ branch หลักที่คุณใช้
+    branches: [main]
     paths:
-      - 'apps/web/**' # สั่งรันเฉพาะเมื่อมีการเปลี่ยนแปลงใน apps/web
-      - '.github/workflows/deploy.yml'
+      - "apps/web/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  contents: write
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
-      # ตั้งค่า Node.js (ตรวจสอบว่าตรงกับ Prerequisite ของคุณ)
+
       - name: 🛠️ Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          # เปลี่ยนเวอร์ชัน Node.js ให้เป็น 20 หรือเวอร์ชันที่สูงกว่า
-          node-version: '20' 
-          # ... (cache configs)
-          cache: 'npm'
-          cache-dependency-path: 'apps/web/package-lock.json' # เพื่อให้ cache ถูกต้อง
-          # ... (หลังจาก Setup Node.js)
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
-      - name: 📦 Install Dependencies
-        # ใช้ npm install ใน root ก่อน (ตามที่ Next.js แนะนำสำหรับ Monorepo)
-        run: npm install 
+      # กันเคส npm ถูกตั้งค่า os/cpu/arch ผิด ทำให้ไบนารีของ lightningcss ไม่ลง
+      - name: 🔧 Normalize npm platform config
+        run: |
+          npm config delete os || true
+          npm config delete cpu || true
+          npm config delete arch || true
 
-      # ** เพิ่ม Step นี้ ** เพื่อติดตั้ง Dependencies เฉพาะของ web ใหม่
-     
-      - name: 🔄 Reinstall web dependencies (Fix lightningcss)
-        run: npm install 
-        working-directory: ./apps/web
-        
-      # ** เพิ่ม Step นี้ **
-      - name: 🧹 Clean Next.js Build Cache
-        run: rm -rf .next
-        working-directory: ./apps/web
+      - name: 📦 Install dependencies (root)
+        run: npm ci --include=optional
 
-      - name: 🏗️ Build Next.js Static Export
-        run: npm run build
-        working-directory: ./apps/web
+      - name: 🧹 Clean Next cache
+        run: rm -rf apps/web/.next
 
-      # ➡️ ขั้นตอนการ Build
-      - name: 📦 Install Dependencies
-        run: npm install
-        working-directory: ./apps/web
+      - name: 🏗️ Build web
+        run: npm run build:web
 
-      - name: 🏗️ Build Next.js Static Export
-        run: npm run build
-        working-directory: ./apps/web
-      
-      # 🚀 ขั้นตอนการ Deploy
+      - name: 🧾 Disable Jekyll (GitHub Pages)
+        run: touch apps/web/out/.nojekyll
+
       - name: 🚀 Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
-        if: github.ref == 'refs/heads/main' # deploy เฉพาะจาก branch หลัก
+        if: github.ref == 'refs/heads/main'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Source Directory คือโฟลเดอร์ 'out' ที่ Next.js สร้างจาก 'output: export'
-          publish_dir: ./apps/web/out
-          # ใช้ branch 'gh-pages' สำหรับการโฮสต์ไฟล์
           publish_branch: gh-pages
+          publish_dir: apps/web/out
