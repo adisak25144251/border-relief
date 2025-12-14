@@ -1,0 +1,45 @@
+name: Deploy Next.js to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # หรือ branch หลักที่คุณใช้
+    paths:
+      - 'apps/web/**' # สั่งรันเฉพาะเมื่อมีการเปลี่ยนแปลงใน apps/web
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      # ตั้งค่า Node.js (ตรวจสอบว่าตรงกับ Prerequisite ของคุณ)
+      - name: 🛠️ Setup Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'apps/web/package-lock.json' # เพื่อให้ cache ถูกต้อง
+
+      # ➡️ ขั้นตอนการ Build
+      - name: 📦 Install Dependencies
+        run: npm install
+        working-directory: ./apps/web
+
+      - name: 🏗️ Build Next.js Static Export
+        run: npm run build
+        working-directory: ./apps/web
+      
+      # 🚀 ขั้นตอนการ Deploy
+      - name: 🚀 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/main' # deploy เฉพาะจาก branch หลัก
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Source Directory คือโฟลเดอร์ 'out' ที่ Next.js สร้างจาก 'output: export'
+          publish_dir: ./apps/web/out
+          # ใช้ branch 'gh-pages' สำหรับการโฮสต์ไฟล์
+          publish_branch: gh-pages
