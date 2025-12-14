@@ -44,7 +44,6 @@ jobs:
 
       - name: 🧾 Disable Jekyll (GitHub Pages)
         run: touch apps/web/out/.nojekyll
-
       - name: 🚀 Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/main'
