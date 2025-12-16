@@ -7,14 +7,10 @@
         "apps/*"
     ],
     "scripts": {
-        "dev:api": "npm run start:dev --workspace=apps/api",
-        "dev:web": "npm run dev --workspace=apps/web",
-        "dev:ml": "npm run dev:ml:cmd",
-        "dev:ml:cmd": "cd apps/ml && uvicorn main:app --reload --port 5000",
-        "build:api": "npm run build --workspace=apps/api",
-        "build:web": "npm run build --workspace=apps/web",
-        "test:api": "npm run test --workspace=apps/api",
-        "lint": "npm run lint --workspaces"
+        "dev:web": "npm run dev -w web",
+        "dev:api": "npm run start:dev -w br-api",
+        "build:web": "npm run build -w web",
+        "build:api": "npm run build -w br-api"
     },
     "devDependencies": {
         "concurrently": "^8.2.0"
