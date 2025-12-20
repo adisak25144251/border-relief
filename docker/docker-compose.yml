@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: govtrip-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: govtrip
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-govtrip_dev_password}
+      POSTGRES_DB: govtrip
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - govtrip-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: govtrip-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - govtrip-network
+    command: redis-server --appendonly yes
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    container_name: govtrip-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://govtrip:${POSTGRES_PASSWORD:-govtrip_dev_password}@postgres:5432/govtrip
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - govtrip-network
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  govtrip-network:
+    driver: bridge

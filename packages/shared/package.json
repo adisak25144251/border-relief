@@ -1,0 +1,24 @@
+{
+    "name": "@govtrip/shared",
+    "version": "1.0.0",
+    "description": "Shared types and schemas for GovTrip Intelligence",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "build": "tsc",
+        "type-check": "tsc --noEmit"
+    },
+    "keywords": [
+        "govtrip",
+        "shared",
+        "types"
+    ],
+    "author": "GovTrip Team",
+    "license": "MIT",
+    "dependencies": {
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "typescript": "^5.3.3"
+    }
+}

@@ -1,0 +1,214 @@
+// Prisma Schema for GovTrip Intelligence
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum TripStatus {
+  PENDING       // รออนุมัติ
+  APPROVED      // อนุมัติแล้ว
+  VERIFIED      // ตรวจสอบแล้ว
+  CANCELLED     // ยกเลิก
+}
+
+enum RiskLevel {
+  LOW           // ต่ำ
+  MEDIUM        // ปานกลาง
+  HIGH          // สูง
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  DRIVER
+  AUDITOR
+}
+
+enum VehicleType {
+  SEDAN
+  SUV
+  VAN
+  TRUCK
+  MOTORCYCLE
+}
+
+enum AuditActionType {
+  TRIP_CREATE
+  TRIP_UPDATE
+  TRIP_DELETE
+  TRIP_APPROVE
+  USER_LOGIN
+  USER_LOGOUT
+  DATA_EXPORT
+  SECURITY_ALERT
+}
+
+// Models
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  name          String
+  role          UserRole     @default(DRIVER)
+  department    String?
+  phoneNumber   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  
+  // Relations
+  trips         Trip[]       @relation("TripDriver")
+  auditLogs     AuditLog[]
+  
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Vehicle {
+  id              String       @id @default(uuid())
+  name            String
+  licensePlate    String       @unique
+  type            VehicleType
+  fuelEfficiency  Float        // km/liter
+  year            Int
+  department      String?
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  // Relations
+  trips           Trip[]
+  
+  @@index([licensePlate])
+  @@index([department])
+  @@map("vehicles")
+}
+
+model Trip {
+  id                String       @id @default(uuid())
+  tripNumber        String       @unique // T-XXXX format
+  title             String
+  startLocation     String
+  startLat          Float
+  startLng          Float
+  endLocation       String
+  endLat            Float
+  endLng            Float
+  distance          Float        // km
+  
+  // Date & Time
+  departureDate     DateTime
+  arrivalDate       DateTime?
+  
+  // Costs
+  fuelPrice         Float?
+  fuelCost          Float?
+  allowance         Float?
+  accommodation     Float?
+  totalCost         Float
+  
+  // Status
+  status            TripStatus   @default(PENDING)
+  risk              RiskLevel?
+  
+  // Foreign Keys
+  driverId          String
+  driver            User         @relation("TripDriver", fields: [driverId], references: [id])
+  vehicleId         String?
+  vehicle           Vehicle?     @relation(fields: [vehicleId], references: [id])
+  
+  // Metadata
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  approvedAt        DateTime?
+  approvedBy        String?
+  
+  // Relations
+  gpsPoints         GPSPoint[]
+  costs             CostRecord[]
+  
+  @@index([tripNumber])
+  @@index([driverId])
+  @@index([status])
+  @@index([departureDate])
+  @@map("trips")
+}
+
+model GPSPoint {
+  id          String    @id @default(uuid())
+  tripId      String
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  lat         Float
+  lng         Float
+  timestamp   DateTime
+  accuracy    Float?    // meters
+  speed       Float?    // km/h
+  heading     Float?    // degrees
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([tripId])
+  @@index([timestamp])
+  @@map("gps_points")
+}
+
+model CostRecord {
+  id            String    @id @default(uuid())
+  tripId        String
+  trip          Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  category      String    // fuel, allowance, accommodation, depreciation, maintenance
+  amount        Float
+  description   String?
+  receiptUrl    String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([tripId])
+  @@index([category])
+  @@map("cost_records")
+}
+
+model AuditLog {
+  id            String          @id @default(uuid())
+  logNumber     String          @unique // LOG-XXXXX format
+  
+  action        AuditActionType
+  severity      String          // INFO, WARNING, ERROR, CRITICAL
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  
+  resource      String?         // What was accessed
+  details       Json?           // Additional details
+  
+  ipAddress     String?
+  userAgent     String?
+  success       Boolean         @default(true)
+  errorMessage  String?
+  
+  timestamp     DateTime        @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model Config {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  value       String
+  description String?
+  updatedAt   DateTime  @updatedAt
+  updatedBy   String?
+  
+  @@map("configs")
+}

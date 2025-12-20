@@ -22,149 +22,163 @@ enum UserRole {
 }
 
 enum DonationStatus {
-  PENDING      // Offline/Intake
-  RECEIVED     // At Warehouse
-  SORTED       // QA Passed
-  SHIPPED      // On Truck
-  DISTRIBUTED  // POD Confirmed
+  PENDING // Offline/Intake
+  RECEIVED // At Warehouse
+  SORTED // QA Passed
+  SHIPPED // On Truck
+  DISTRIBUTED // POD Confirmed
   CANCELLED
   EXPIRED
 }
 
+enum ItemCategory {
+  FOOD
+  WATER
+  MEDICINE
+  CLOTHES
+  HYGIENE
+  SHELTER
+  OTHER
+}
+
 enum LedgerType {
-  RECEIVE      // + Stock
-  DISPATCH     // - Stock
+  RECEIVE // + Stock
+  DISPATCH // - Stock
   TRANSFER_OUT // - Stock (Move)
-  TRANSFER_IN  // + Stock (Move)
-  ADJUST_LOSS  // - Stock (Shrinkage)
+  TRANSFER_IN // + Stock (Move)
+  ADJUST_LOSS // - Stock (Shrinkage)
   ADJUST_FOUND // + Stock
 }
 
 // --- Users & Auth ---
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
+  id           String   @id @default(uuid())
+  email        String   @unique
   passwordHash String
   fullName     String
-  role         UserRole  @default(DONOR)
-  orgName      String?   // For Partners/NGOs
-  
+  role         UserRole @default(DONOR)
+  orgName      String? // For Partners/NGOs
+
   // Relations
-  donations    Donation[]
-  auditLogs    AuditLog[]
+  donations         Donation[]
+  auditLogs         AuditLog[]
   managedWarehouses Warehouse[] // If Ops Admin
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // --- Logistics Core ---
 
 model Warehouse {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   name        String
-  locationStr String   // "Mae Sot, Tak"
-  lat         Float?   // Keeping fuzzy or restricted
+  locationStr String // "Mae Sot, Tak"
+  lat         Float? // Keeping fuzzy or restricted
   lng         Float?
-  
+
   // Relations
-  managerId   String?
-  manager     User?    @relation(fields: [managerId], references: [id])
+  managerId    String?
+  manager      User?         @relation(fields: [managerId], references: [id])
   stockLedgers StockLedger[]
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // --- Donation & Inventory ---
 
 model Batch {
-  id          String   @id @default(uuid())
-  batchCode   String   @unique // Generated YYYYMMDD-XXX
-  expiryDate  DateTime?
-  
+  id         String    @id @default(uuid())
+  batchCode  String    @unique // Generated YYYYMMDD-XXX
+  expiryDate DateTime?
+
   // Relations
-  items       DonationItem[]
-  
-  createdAt   DateTime @default(now())
+  items DonationItem[]
+
+  createdAt DateTime @default(now())
 }
 
 model Donation {
-  id          String   @id @default(uuid())
-  referenceId String?  // External ID or Paper Ref
-  
-  donorId     String?
-  donor       User?    @relation(fields: [donorId], references: [id])
-  
+  id          String  @id @default(uuid())
+  referenceId String? // External ID or Paper Ref
+
+  donorId String?
+  donor   User?   @relation(fields: [donorId], references: [id])
+
   items       DonationItem[]
   auditLogs   AuditLog[]
+  // ✅ เพิ่ม 3 ฟิลด์นี้
+  description String?
+  status      DonationStatus @default(PENDING)
+  category    ItemCategory?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model DonationItem {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   description String
   quantity    Int
   unit        String
-  category    String   // FOOD, MEDS, etc.
-  
-  status      DonationStatus @default(PENDING)
-  
-  donationId  String
-  donation    Donation @relation(fields: [donationId], references: [id])
-  
-  batchId     String?
-  batch       Batch?   @relation(fields: [batchId], references: [id])
+  category    String // FOOD, MEDS, etc.
+
+  status DonationStatus @default(PENDING)
+
+  donationId String
+  donation   Donation @relation(fields: [donationId], references: [id])
+
+  batchId String?
+  batch   Batch?  @relation(fields: [batchId], references: [id])
 
   // Relations
   ledgerEntries StockLedger[] // Traceability of this specific item line
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // --- Double-Entry Ledger (The Source of Truth for Stock) ---
 
 model StockLedger {
-  id          String      @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   warehouseId String
-  warehouse   Warehouse   @relation(fields: [warehouseId], references: [id])
-  
-  itemId      String
-  item        DonationItem @relation(fields: [itemId], references: [id])
-  
-  type        LedgerType
-  quantity    Int         // Positive or Negative
-  
-  balanceAfter Int        // Snapshot for quick check
-  
-  refDocId    String?     // ID of Delivery or Incident Report
-  reason      String?
-  
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+
+  itemId String
+  item   DonationItem @relation(fields: [itemId], references: [id])
+
+  type     LedgerType
+  quantity Int // Positive or Negative
+
+  balanceAfter Int // Snapshot for quick check
+
+  refDocId String? // ID of Delivery or Incident Report
+  reason   String?
+
   transactionDate DateTime @default(now())
 }
 
 // --- Audit & Security ---
 
 model AuditLog {
-  id          String   @id @default(uuid())
-  
-  action      String   // LOGIN, VIEW_PII, UPDATE_STATUS
-  resource    String   // Table Name
-  resourceId  String?  // UUID
-  
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  
-  details     Json?    // OldValue, NewValue, Metadata
-  ipAddress   String?
-  userAgent   String?
-  
-  donationId  String?
-  donation    Donation? @relation(fields: [donationId], references: [id])
+  id String @id @default(uuid())
 
-  timestamp   DateTime @default(now())
+  action     String // LOGIN, VIEW_PII, UPDATE_STATUS
+  resource   String // Table Name
+  resourceId String? // UUID
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  details   Json? // OldValue, NewValue, Metadata
+  ipAddress String?
+  userAgent String?
+
+  donationId String?
+  donation   Donation? @relation(fields: [donationId], references: [id])
+
+  timestamp DateTime @default(now())
 }

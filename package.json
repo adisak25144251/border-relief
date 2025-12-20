@@ -1,16 +1,23 @@
 {
     "name": "border-relief",
     "version": "0.1.0",
-    "description": "BorderRelief Donations Monorepo",
+    "description": "GovTrip Intelligence Monorepo",
     "private": true,
     "workspaces": [
-        "apps/*"
+        "apps/*",
+        "packages/*"
     ],
     "scripts": {
-        "dev:web": "npm run dev -w web",
-        "dev:api": "npm run start:dev -w br-api",
-        "build:web": "npm run build -w web",
-        "build:api": "npm run build -w br-api"
+        "dev": "cd apps/web && npm run dev",
+        "build": "cd apps/web && npm run build",
+        "start": "cd apps/web && npm start",
+        "lint": "cd apps/web && npm run lint",
+        "prisma:generate": "cd apps/web && npx prisma generate",
+        "prisma:migrate": "cd apps/web && npx prisma migrate dev",
+        "prisma:studio": "cd apps/web && npx prisma studio",
+        "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
+        "docker:down": "docker-compose -f docker/docker-compose.yml down",
+        "docker:logs": "docker-compose -f docker/docker-compose.yml logs -f"
     },
     "devDependencies": {
         "concurrently": "^8.2.0"
